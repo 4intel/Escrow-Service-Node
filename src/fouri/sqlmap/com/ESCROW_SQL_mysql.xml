@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="EscrowBBSArticle">
+	
+	<select id="escrowBbsListCnt" parameterType="fouri.com.cpwallet.service.EscrowBoardVO" resultType="java.lang.Integer">
+			SELECT COUNT(BOARD_NUM)
+			FROM BOARD
+	</select>
+	
+	<select id="escrowBbsList" parameterType="fouri.com.cpwallet.service.EscrowBoardVO" resultType="java.util.HashMap">
+			SELECT 
+				* 
+			FROM 
+				BOARD
+			ORDER BY BOARD_NUM DESC
+			LIMIT #{recordCountPerPage} OFFSET #{firstIndex}
+	</select>
+	
+	<select id="escrowBbsTotalList" parameterType="fouri.com.cpwallet.service.EscrowBoardVO" resultType="java.util.HashMap">
+			SELECT 
+				* 
+			FROM 
+				BOARD
+			ORDER BY BOARD_NUM DESC
+	</select>
+	
+	<select id="escrowBbsView" parameterType="fouri.com.cpwallet.service.EscrowBoardVO" resultType="java.util.HashMap">
+			SELECT 
+				*
+			FROM
+				BOARD
+			WHERE
+				BOARD_NUM = #{boardNum}
+	</select>
+	
+	
+	<select id="escrowBbsMaxNum" parameterType="fouri.com.cpwallet.service.EscrowBoardVO" resultType="java.lang.Integer">
+			SELECT IFNULL(MAX(BOARD_NUM),0)+1 AS BOARD_NUM_CNT FROM BOARD
+ 	</select>
+ 	
+	<insert id="escrowBbsInsert" parameterType="fouri.com.cpwallet.service.EscrowBoardVO">
+			INSERT INTO BOARD
+			(BOARD_NUM, BOARD_NAME, BOARD_PASS, 
+			BOARD_MARKET, BOARD_SUBJECT, BOARD_PRICE, BOARD_WALLETID, BOARD_CONTENT, BOARD_FILE, 
+			BOARD_RE_REF, BOARD_RE_LEV, BOARD_RE_SEQ, BOARD_READCOUNT, 
+			BOARD_DATE, BOARD_MDATE
+			)
+			VALUES
+			( #{boardNumCnt}, #{boardName}, #{boardPass},
+			  #{boardMarket}, #{boardSubject}, #{boardPrice}, #{boardWalletId}, #{boardContent}, '',
+			  0, 0, 0, 0,
+			  now(), NULL
+			 )			
+	</insert>
+	
+	<update id="escrowBbsUpdate" parameterType="fouri.com.cpwallet.service.EscrowBoardVO">
+			UPDATE BOARD SET
+				BOARD_NAME = #{boardName},
+				BOARD_MARKET = #{boardMarket},
+				BOARD_SUBJECT = #{boardSubject},
+				BOARD_PRICE = #{boardPrice},
+				BOARD_WALLETID = #{boardWalletId},
+				BOARD_CONTENT = #{boardContent},
+				BOARD_MDATE = SYSDATE()
+			WHERE BOARD_NUM = #{boardNum}
+ 	</update>
+	
+	<delete id="escrowBbsDelete" parameterType="fouri.com.cpwallet.service.EscrowBoardVO">
+			DELETE
+			FROM
+				BOARD
+			WHERE
+				BOARD_NUM = #{boardNum}
+	</delete>
+	
+	
+	
+	<insert id="escrowTransInsert" parameterType="fouri.com.cpwallet.service.EscrowTrans">
+			INSERT INTO escrow_trans
+				(SWID, BWID, TSTATE, REGDATE, BOARD_NUM, SWID_NM, BWID_NM )
+			VALUES
+			 	( #{swid}, #{bwid}, 1, now(), #{boardNum}, #{swidnm}, #{bwidnm} )
+	</insert>
+	
+	
+	
+	
+	
+	
+	<select id="sellerList" resultType="java.util.HashMap">
+		select board_name, board_walletid 
+		from board 
+		group by board_name, board_walletid
+		order by board_name
+	</select>
+	
+	<select id="transListCnt" parameterType="fouri.com.cpwallet.service.EscrowTrans" resultType="java.lang.Integer">
+			select count(t.IDX)
+			from escrow_trans t
+			left join board b on t.BOARD_NUM = b.BOARD_NUM
+			WHERE
+				t.BOARD_NUM = #{searchNo}
+	</select>
+	<select id="transList" parameterType="fouri.com.cpwallet.service.EscrowTrans" resultType="java.util.HashMap">
+			select t.IDX, t.SWID, t.BWID, t.TSTATE, t.REGDATE, t.SWID_NM, t.BWID_NM,
+				b.BOARD_MARKET, b.BOARD_SUBJECT, b.BOARD_PRICE
+			from escrow_trans t
+			left join board b on t.BOARD_NUM = b.BOARD_NUM
+			WHERE
+				t.BOARD_NUM = #{searchNo}
+			order by t.REGDATE desc
+	</select>
+	
+	<update id="escrowTransUpdate" parameterType="fouri.com.cpwallet.service.EscrowTrans">
+			UPDATE escrow_trans SET
+				TSTATE = #{tstate}
+			WHERE IDX = #{idx}
+ 	</update>
+ 	
+ 	
+ 	
+ 	
+	<select id="buyerList" resultType="java.util.HashMap">
+		select bwid, bwid_nm from escrow_trans group by bwid, bwid_nm order by bwid_nm
+	</select>
+	<select id="buyerTransListCnt" parameterType="fouri.com.cpwallet.service.EscrowTrans" resultType="java.lang.Integer">
+			select count(t.IDX)
+			from escrow_trans t
+			left join board b on t.BOARD_NUM = b.BOARD_NUM
+			WHERE 1=1
+			<if test='searchId != null and searchId != ""'>
+				and t.BWID = #{searchId}
+			</if>
+			<if test='searchNo != null and searchNo != "" and searchNo != "0"'>
+				and t.BOARD_NUM = #{searchNo}
+			</if>
+	</select>
+	<select id="buyerTransList" parameterType="fouri.com.cpwallet.service.EscrowTrans" resultType="java.util.HashMap">
+			select t.IDX, t.SWID, t.BWID, t.TSTATE, t.REGDATE, t.SWID_NM, t.BWID_NM,
+				b.BOARD_MARKET, b.BOARD_SUBJECT, b.BOARD_PRICE
+			from escrow_trans t
+			left join board b on t.BOARD_NUM = b.BOARD_NUM
+			WHERE 1=1
+			<if test='searchId != null and searchId != ""'>
+				and t.BWID = #{searchId}
+			</if>
+			<if test='searchNo != null and searchNo != "" and searchNo != "0"'>
+				and t.BOARD_NUM = #{searchNo}
+			</if>
+			order by t.REGDATE desc
+			LIMIT #{recordCountPerPage} OFFSET #{firstIndex}
+	</select>
+	
+	
+	
+	
+	
+	
+	<!-- Direct 거래 -->
+	
+	
+	<select id="directProductList" resultType="java.util.HashMap">
+			select t.IDX, t.MNAME, t.UNIT
+			from direct_product t
+			order by t.IDX asc
+	</select>
+	
+	<insert id="directProductInsert" parameterType="fouri.com.escrow.service.DirectProduct">
+			INSERT INTO direct_product
+				( MNAME, UNIT, REGDATE )
+			VALUES
+			 	( #{mname}, #{unit}, now() )
+	</insert>
+	
+	<delete id="directProductDelete" parameterType="fouri.com.escrow.service.DirectProduct">
+			DELETE FROM direct_product
+			WHERE IDX = #{idx}
+	</delete>
+	
+	
+	
+	<select id="selectMaxSidx" resultType="java.lang.Integer">
+			SELECT IFNULL(MAX(SIDX),0)+1 AS SIDX FROM direct_sale
+ 	</select>
+	<select id="selectMaxSidxNo" resultType="java.lang.Integer">
+			SELECT ifnull(MAX(SIDX),-1) AS SIDX FROM direct_sale
+ 	</select>
+	<insert id="directSaleInsert" parameterType="fouri.com.escrow.service.DirectSale">
+			INSERT INTO direct_sale
+				( SIDX, SSTATE, SWID, BWID, TOTALPAY, REGDATE )
+			VALUES
+			 	( #{sidx}, 0, #{swid}, '', #{totalpay}, now() )
+	</insert>
+	<insert id="directSalePlistInsert" parameterType="fouri.com.escrow.service.DirectSale">
+			INSERT INTO direct_sale_plist
+				( SIDX,  SNAME, SUNIT, SCNT, SSUM, REGDATE )
+			VALUES
+			 	( #{sidx}, #{sname},#{sunit},#{scnt},#{ssum}, now() )
+	</insert>
+	<select id="directSaleInfo" resultType="java.util.HashMap">
+			select SIDX, SSTATE, SWID, BWID, BWID_NM, TOTALPAY, REGDATE, SEND_COIN
+			from direct_sale where SIDX = #{sidx}
+	</select>
+	<select id="directSalePlistList" parameterType="fouri.com.escrow.service.DirectSale" resultType="java.util.HashMap">
+			select PIDX, SIDX,  SNAME, SUNIT, SCNT, SSUM, REGDATE
+			from direct_sale_plist
+			WHERE SIDX = #{sidx}
+			order by PIDX asc
+	</select>
+	<update id="updateDirectSaleBuyerInfo" parameterType="fouri.com.cpwallet.service.EscrowTrans">
+			UPDATE direct_sale SET
+				BWID = #{bwid}, BWID_NM = #{bwid_nm}, SSTATE=1, SEND_COIN = #{send_coin}
+			WHERE SIDX = #{sidx}
+ 	</update>
+	
+	
+</mapper>
